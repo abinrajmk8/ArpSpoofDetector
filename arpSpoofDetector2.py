@@ -1,5 +1,4 @@
 import scapy.all as scapy
-from pymongo import MongoClient
 from datetime import datetime, timedelta
 import time
 import sys
@@ -11,12 +10,6 @@ from interface_fetcher import get_active_interface
 
 # Interface configuration (at top for easy change)
 interface = get_active_interface() or "Intel(R) Wireless-AC 9560 160MHz"  # Dynamic fetch with hardcoded fallback
-
-# MongoDB Connection
-MONGO_URI = "mongodb+srv://miniproject07s:G16PObcPYM3KeqYs@network.k0ddo.mongodb.net/?retryWrites=true&w=majority&appName=networkc"
-client = MongoClient(MONGO_URI)
-db = client["test"]
-security_report_collection = db["securityreports"]
 
 # Logging configuration
 logging.basicConfig(level=logging.INFO)
@@ -33,7 +26,6 @@ def signal_handler(sig, frame):
     logging.info("[+] Received SIGTERM, stopping detector...")
     running = False
     stop_sniffer()
-    close_mongodb()
     sys.exit(0)
 
 # Register signal handler
@@ -52,14 +44,6 @@ def stop_sniffer():
             logging.error(f"Error stopping sniffer: {e}")
         finally:
             sniffer = None  # Ensure sniffer is cleared
-
-# Helper to close MongoDB safely
-def close_mongodb():
-    try:
-        client.close()
-        logging.info("[+] MongoDB connection closed")
-    except Exception as e:
-        logging.error(f"Error closing MongoDB connection: {e}")
 
 def get_mac(ip):
     try:
@@ -93,12 +77,7 @@ def log_alert(src_ip, real_mac, spoofed_mac):
             "deviceName": "",
         }
 
-        try:
-            security_report_collection.insert_one(alert_data)
-            logging.info("[+] Alert logged to MongoDB")
-        except Exception as e:
-            logging.error(f"Error logging to MongoDB: {e}")
-
+        logging.info("[+] Alert logged (no DB involved).")
         count = 0
         last_log_time = current_time
     else:
@@ -165,11 +144,9 @@ if __name__ == "__main__":
         logging.info("[+] Detector stopped by user")
         running = False
         stop_sniffer()
-        close_mongodb()
         sys.exit(0)
     except Exception as e:
         logging.error(f"Unexpected error: {e}")
         running = False
         stop_sniffer()
-        close_mongodb()
         sys.exit(1)
