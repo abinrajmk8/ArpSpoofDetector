@@ -122,9 +122,7 @@ pip install scapy
 
 Or using a requirements.txt file:
 
-```bash
-echo scapy > requirements.txt
-```
+
 
 ```bash
 pip install -r requirements.txt
